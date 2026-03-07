@@ -180,7 +180,7 @@ Note: Continuous GPS tracking requires a Foreground Service.
 
 ------------------------------------------------------------------------
 
-# Phase 8 -- Map Visualization
+# Phase 8 -- Map Visualization - Complete
 
 Use Google Maps SDK.
 
@@ -193,7 +193,7 @@ Features to implement:
 
 ------------------------------------------------------------------------
 
-# Phase 9 -- Data Export
+# Phase 9 -- Data Export - Complete
 
 Allow exporting location history.
 
@@ -219,7 +219,7 @@ Export options:
 
 ------------------------------------------------------------------------
 
-# Phase 10 -- UI Development (Jetpack Compose)
+# Phase 10 -- UI Development (Jetpack Compose) - Complete
 
 Key screens:
 
@@ -280,6 +280,22 @@ Possible improvements:
 -   adaptive location interval
 -   track compression
 -   background service reliability
+
+## Settings Screen
+
+A 5th navigation tab added alongside Home, Map, History, and Export.
+Preferences persisted via Jetpack DataStore.
+
+### Tracking Interval
+
+-   User-configurable recording frequency (e.g. 5s, 10s, 30s, 60s)
+-   `LocationService` reads interval from DataStore instead of hardcoded constants
+-   Requires: DataStore dependency, `SettingsRepository`
+
+### Dark Mode Toggle
+
+-   Overrides system theme
+-   `LocationTrackerTheme` updated to accept a `darkTheme` parameter driven by stored preference
 
 ------------------------------------------------------------------------
 

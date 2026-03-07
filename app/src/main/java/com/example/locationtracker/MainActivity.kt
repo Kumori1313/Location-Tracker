@@ -10,8 +10,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,7 +18,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.locationtracker.location.LocationService
-import com.example.locationtracker.ui.screens.HomeScreen
+import com.example.locationtracker.ui.navigation.AppNavigation
 import com.example.locationtracker.ui.theme.LocationTrackerTheme
 import com.example.locationtracker.workers.LocationWorker
 import java.util.concurrent.TimeUnit
@@ -42,14 +40,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LocationTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        isTracking = isTracking,
-                        onStartTracking = ::onStartTracking,
-                        onStopTracking = ::onStopTracking
-                    )
-                }
+                AppNavigation(
+                    modifier = Modifier.fillMaxSize(),
+                    isTracking = isTracking,
+                    onStartTracking = ::onStartTracking,
+                    onStopTracking = ::onStopTracking
+                )
             }
         }
     }
@@ -93,8 +89,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun schedulePeriodicTracking() {
-        val request = PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES)
-            .build()
+        val request = PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,

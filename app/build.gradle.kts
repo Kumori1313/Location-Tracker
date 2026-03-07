@@ -85,6 +85,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:4.3.3")
 
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.4")
+
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 

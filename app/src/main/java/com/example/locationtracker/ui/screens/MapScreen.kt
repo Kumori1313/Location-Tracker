@@ -5,12 +5,14 @@ import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import com.example.locationtracker.database.entities.LocationPoint
+import com.example.locationtracker.database.AppDatabase
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -22,11 +24,13 @@ import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun MapScreen(
-    modifier: Modifier = Modifier,
-    points: List<LocationPoint> = emptyList()
-) {
+fun MapScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+
+    val points by AppDatabase.getInstance(context).locationDao()
+        .getAllPoints()
+        .collectAsState(initial = emptyList())
+
     val hasLocationPermission = remember {
         ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
@@ -59,13 +63,8 @@ fun MapScreen(
         properties = MapProperties(isMyLocationEnabled = hasLocationPermission)
     ) {
         if (latLngPoints.size >= 2) {
-            Polyline(
-                points = latLngPoints,
-                color = Color.Blue,
-                width = 8f
-            )
+            Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
         }
-
         lastPoint?.let {
             Marker(
                 state = MarkerState(position = LatLng(it.latitude, it.longitude)),
