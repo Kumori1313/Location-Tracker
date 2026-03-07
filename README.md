@@ -91,7 +91,7 @@ Implement runtime permission requests.
 
 ------------------------------------------------------------------------
 
-# Phase 4 -- Core App Architecture
+# Phase 4 -- Core App Architecture - Complete
 
 Recommended architecture:
 
@@ -120,7 +120,7 @@ Recommended architecture:
 
 ------------------------------------------------------------------------
 
-# Phase 5 -- Location Tracking
+# Phase 5 -- Location Tracking - Complete
 
 Use Google Play Services:
 
@@ -144,7 +144,7 @@ Fields to store:
 
 ------------------------------------------------------------------------
 
-# Phase 6 -- Database (Room)
+# Phase 6 -- Database (Room) - Complete
 
 Create entity:
 
@@ -166,7 +166,7 @@ Components needed:
 
 ------------------------------------------------------------------------
 
-# Phase 7 -- Background Tracking
+# Phase 7 -- Background Tracking - Complete
 
 Use WorkManager for periodic tasks.
 
