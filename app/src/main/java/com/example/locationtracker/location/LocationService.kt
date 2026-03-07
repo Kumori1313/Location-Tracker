@@ -1,4 +1,137 @@
 package com.example.locationtracker.location
 
-// Foreground service for continuous GPS tracking.
-// Implemented in Phase 5.
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+import com.example.locationtracker.MainActivity
+import com.example.locationtracker.database.AppDatabase
+import com.example.locationtracker.database.entities.LocationPoint
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+
+class LocationService : Service() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun onCreate() {
+        super.onCreate()
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        createNotificationChannel()
+
+        val dao = AppDatabase.getInstance(this).locationDao()
+        val repository = LocationRepository(dao)
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    serviceScope.launch {
+                        repository.save(
+                            LocationPoint(
+                                latitude = location.latitude,
+                                longitude = location.longitude,
+                                timestamp = location.time,
+                                accuracy = location.accuracy
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START -> startTracking()
+            ACTION_STOP -> stopTracking()
+        }
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun startTracking() {
+        val notification = buildNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, INTERVAL_MS)
+            .setMinUpdateIntervalMillis(MIN_INTERVAL_MS)
+            .build()
+
+        try {
+            fusedLocationClient.requestLocationUpdates(request, locationCallback, mainLooper)
+        } catch (e: SecurityException) {
+            stopSelf()
+        }
+    }
+
+    private fun stopTracking() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
+
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Location Tracking",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun buildNotification(): Notification {
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Location Tracker")
+            .setContentText("Tracking your location...")
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .build()
+    }
+
+    companion object {
+        const val ACTION_START = "ACTION_START"
+        const val ACTION_STOP = "ACTION_STOP"
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "location_tracking"
+        private const val INTERVAL_MS = 10_000L
+        private const val MIN_INTERVAL_MS = 5_000L
+    }
+}
