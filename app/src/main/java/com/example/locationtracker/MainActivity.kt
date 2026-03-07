@@ -16,9 +16,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.locationtracker.location.LocationService
 import com.example.locationtracker.ui.screens.HomeScreen
 import com.example.locationtracker.ui.theme.LocationTrackerTheme
+import com.example.locationtracker.workers.LocationWorker
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -66,6 +71,7 @@ class MainActivity : ComponentActivity() {
 
     private fun onStopTracking() {
         sendActionToService(LocationService.ACTION_STOP)
+        cancelPeriodicTracking()
         isTracking = false
     }
 
@@ -75,6 +81,7 @@ class MainActivity : ComponentActivity() {
 
     private fun startLocationService() {
         sendActionToService(LocationService.ACTION_START)
+        schedulePeriodicTracking()
         isTracking = true
     }
 
@@ -83,5 +90,23 @@ class MainActivity : ComponentActivity() {
             this.action = action
         }
         startForegroundService(intent)
+    }
+
+    private fun schedulePeriodicTracking() {
+        val request = PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    private fun cancelPeriodicTracking() {
+        WorkManager.getInstance(this).cancelUniqueWork(WORK_NAME)
+    }
+
+    companion object {
+        private const val WORK_NAME = "periodic_location_tracking"
     }
 }
