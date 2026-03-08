@@ -17,6 +17,12 @@ interface SessionDao {
     @Update
     suspend fun update(session: Session)
 
+    @Query("DELETE FROM sessions WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("UPDATE sessions SET name = :name WHERE id = :id")
+    suspend fun updateName(id: Long, name: String?)
+
     // Route stats — fastest first
     @Query("SELECT * FROM sessions WHERE endTime > 0 ORDER BY durationMs ASC")
     fun getAllCompleted(): Flow<List<Session>>

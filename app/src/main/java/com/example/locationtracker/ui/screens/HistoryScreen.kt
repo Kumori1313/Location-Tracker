@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,7 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.LocationPoint
+import com.example.locationtracker.database.entities.Session
 import com.example.locationtracker.database.entities.SessionWithPointCount
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -25,6 +28,7 @@ import java.util.Locale
 fun HistoryScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val db = AppDatabase.getInstance(context)
+    val scope = rememberCoroutineScope()
 
     val sessionsWithCount by db.sessionDao()
         .getSessionsWithPointCount()
@@ -44,7 +48,6 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
     }
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
-        // Route stats summary header
         if (sessionsWithCount.isNotEmpty()) {
             item {
                 RouteStatsHeader(sessionsWithCount)
@@ -52,7 +55,6 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // Session cards (most recent first)
         items(sessionsWithCount, key = { it.session.id }) { swc ->
             val isExpanded = expandedSessionId == swc.session.id
             SessionCard(
@@ -61,14 +63,25 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
                 expandedPoints = if (isExpanded) {
                     allPoints.filter { it.sessionId == swc.session.id }
                 } else emptyList(),
-                onClick = {
+                onExpand = {
                     expandedSessionId = if (isExpanded) null else swc.session.id
+                },
+                onRename = { newName ->
+                    scope.launch {
+                        db.sessionDao().updateName(swc.session.id, newName)
+                    }
+                },
+                onDelete = {
+                    scope.launch {
+                        db.locationDao().deleteBySessionId(swc.session.id)
+                        db.sessionDao().deleteById(swc.session.id)
+                    }
+                    if (expandedSessionId == swc.session.id) expandedSessionId = null
                 }
             )
             HorizontalDivider()
         }
 
-        // Legacy points recorded before session tracking
         if (legacyPoints.isNotEmpty()) {
             item {
                 Text(
@@ -88,9 +101,9 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun RouteStatsHeader(sessionsWithCount: List<SessionWithPointCount>) {
-    val completedSessions = sessionsWithCount.map { it.session }
-    val fastest = completedSessions.minByOrNull { it.durationMs }
-    val averageMs = completedSessions.map { it.durationMs }.average().toLong()
+    val sessions = sessionsWithCount.map { it.session }
+    val fastest = sessions.minByOrNull { it.durationMs }
+    val averageMs = sessions.map { it.durationMs }.average().toLong()
 
     Row(
         modifier = Modifier
@@ -98,7 +111,7 @@ private fun RouteStatsHeader(sessionsWithCount: List<SessionWithPointCount>) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        StatChip(label = "Sessions", value = "${completedSessions.size}")
+        StatChip(label = "Sessions", value = "${sessions.size}")
         fastest?.let { StatChip(label = "Fastest", value = formatDuration(it.durationMs)) }
         StatChip(label = "Average", value = formatDuration(averageMs))
     }
@@ -109,21 +122,77 @@ private fun SessionCard(
     swc: SessionWithPointCount,
     isExpanded: Boolean,
     expandedPoints: List<LocationPoint>,
-    onClick: () -> Unit
+    onExpand: () -> Unit,
+    onRename: (String?) -> Unit,
+    onDelete: () -> Unit
 ) {
     val sdf = remember { SimpleDateFormat("MMM dd, yyyy  HH:mm", Locale.getDefault()) }
+    val displayName = swc.session.name ?: sdf.format(Date(swc.session.startTime))
+
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var renameText by remember(swc.session.name) {
+        mutableStateOf(swc.session.name ?: "")
+    }
+
+    // Rename dialog
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename Session") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    label = { Text("Session name") },
+                    placeholder = { Text(sdf.format(Date(swc.session.startTime))) },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    onRename(renameText.trim().ifEmpty { null })
+                    showRenameDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Session") },
+            text = { Text("\"$displayName\" and all its recorded points will be permanently deleted.") },
+            confirmButton = {
+                Button(
+                    onClick = { onDelete(); showDeleteDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .clickable(onClick = onExpand)
+                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = sdf.format(Date(swc.session.startTime)),
+                    text = displayName,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -138,6 +207,30 @@ private fun SessionCard(
                               else Icons.Default.KeyboardArrowDown,
                 contentDescription = if (isExpanded) "Collapse" else "Expand"
             )
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Session options")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        onClick = {
+                            menuExpanded = false
+                            showRenameDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            menuExpanded = false
+                            showDeleteDialog = true
+                        }
+                    )
+                }
+            }
         }
 
         AnimatedVisibility(visible = isExpanded) {
@@ -166,8 +259,12 @@ private fun StatChip(label: String, value: String) {
 @Composable
 private fun LocationPointItem(point: LocationPoint, indented: Boolean = false) {
     val sdf = remember { SimpleDateFormat("MMM dd, yyyy  HH:mm:ss", Locale.getDefault()) }
-    val startPadding = if (indented) 32.dp else 16.dp
-    Column(modifier = Modifier.padding(start = startPadding, end = 16.dp, top = 8.dp, bottom = 8.dp)) {
+    Column(
+        modifier = Modifier.padding(
+            start = if (indented) 32.dp else 16.dp,
+            end = 16.dp, top = 8.dp, bottom = 8.dp
+        )
+    ) {
         Text(
             text = sdf.format(Date(point.timestamp)),
             style = MaterialTheme.typography.labelMedium,

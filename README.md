@@ -332,7 +332,39 @@ Allow previously exported files to be loaded back into the app.
 
 ------------------------------------------------------------------------
 
-# Phase 16 -- Play Store Preparation
+# Phase 16 -- Session Management - Complete
+
+Allow users to edit session details directly from the History screen.
+
+-   Rename sessions (requires adding a `name: String?` column to the `Session` entity + Room migration)
+-   Delete individual sessions (cascades to remove all associated `LocationPoint` records via FK)
+-   Edit UI: long-press or trailing icon on a session card opens a bottom sheet or dialog with rename and delete options
+
+------------------------------------------------------------------------
+
+# Phase 17 -- Route Definition
+
+Allow users to define named routes with explicit start and end points.
+
+-   New `Route` entity: `id`, `name`, `startLat`, `startLng`, `endLat`, `endLng`, `arrivalRadiusMeters`
+-   Routes screen (new nav tab or sub-section) for creating, naming, and managing saved routes
+-   When starting tracking, optionally associate a session with a saved route
+-   Map screen can display the defined start/end markers for the active route alongside the live polyline
+
+------------------------------------------------------------------------
+
+# Phase 18 -- Auto-Stop on Arrival
+
+Automatically stop tracking when the device enters a configurable radius around the route destination.
+
+-   `LocationService` compares each incoming fix against the active route's end point using the Haversine formula
+-   If distance ≤ arrival radius, broadcasts `ACTION_STOP` to itself and updates the session
+-   Arrival radius is user-configurable per route (set during route creation in Phase 17) with a global default in Settings
+-   Settings screen gains a **Default Arrival Radius** field (e.g. 25 m, 50 m, 100 m) persisted via DataStore
+
+------------------------------------------------------------------------
+
+# Phase 19 -- Play Store Preparation
 
 Requirements:
 
@@ -347,10 +379,14 @@ Checklist:
 -   remove debug logs
 -   enable ProGuard
 -   release build signing
+-   fix lint errors (45 errors deferred from pre-release APK build):
+    -   remove `lint { checkReleaseBuilds = false }` block from `app/build.gradle.kts`
+    -   `InvalidFragmentVersionForActivityResult` in `MainActivity.kt` is a known false positive for `registerForActivityResult` used in an Activity — suppress with `@SuppressLint("InvalidFragmentVersionForActivityResult")` on the `permissionLauncher` property
+    -   address remaining lint warnings before submission
 
 ------------------------------------------------------------------------
 
-# Phase 17 -- Future Enhancements
+# Phase 20 -- Future Enhancements
 
 Potential upgrades:
 

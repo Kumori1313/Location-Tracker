@@ -8,5 +8,6 @@ data class Session(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startTime: Long,
     val endTime: Long = 0L,      // 0 = still active
-    val durationMs: Long = 0L
+    val durationMs: Long = 0L,
+    val name: String? = null     // null = use formatted date as display label
 )
