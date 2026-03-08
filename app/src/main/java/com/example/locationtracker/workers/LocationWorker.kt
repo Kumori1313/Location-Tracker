@@ -27,8 +27,8 @@ class LocationWorker(
 
         val location = getCurrentLocation() ?: return Result.retry()
 
-        val dao = AppDatabase.getInstance(applicationContext).locationDao()
-        LocationRepository(dao).save(
+        val db = AppDatabase.getInstance(applicationContext)
+        LocationRepository(db.locationDao(), db.sessionDao()).save(
             LocationPoint(
                 latitude = location.latitude,
                 longitude = location.longitude,

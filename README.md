@@ -245,7 +245,7 @@ Key screens:
 
 ------------------------------------------------------------------------
 
-# Phase 11 -- Testing
+# Phase 11 -- Testing - Complete
 
 Testing types:
 
@@ -267,7 +267,7 @@ Testing types:
 
 ------------------------------------------------------------------------
 
-# Phase 12 -- Optimization
+# Phase 12 -- Optimization - Complete
 
 Improve:
 
@@ -299,7 +299,40 @@ Preferences persisted via Jetpack DataStore.
 
 ------------------------------------------------------------------------
 
-# Phase 13 -- Play Store Preparation
+# Phase 13 -- Route Statistics - Complete
+
+Track and compare travel times across repeated routes.
+
+-   Record the total duration of each tracking session
+-   Compare each new run's time against your personal average for that route
+-   Display sessions sorted fastest to slowest
+-   Requires a `Session` entity (start time, end time, duration) linked to `LocationPoint` records
+
+------------------------------------------------------------------------
+
+# Phase 14 -- Multi-Session Tracking - Complete
+
+Support distinct, named tracking sessions rather than a single continuous log.
+
+-   Each start/stop cycle creates a discrete session with its own metadata (name, date, point count)
+-   History screen groups points by session instead of showing a flat list
+-   Map screen can display a selected session's route in isolation
+-   Likely requires a `Session` table and a foreign key on `LocationPoint`
+
+------------------------------------------------------------------------
+
+# Phase 15 -- Import
+
+Allow previously exported files to be loaded back into the app.
+
+-   File picker via `ActivityResultContracts.OpenDocument`
+-   Per-format parsers for CSV, GPX, and JSON
+-   Choice of merging imported points into the existing database or displaying them as a separate read-only session
+-   Requires deciding on schema handling (same `LocationPoint` table vs. a separate imported-sessions table)
+
+------------------------------------------------------------------------
+
+# Phase 16 -- Play Store Preparation
 
 Requirements:
 
@@ -317,14 +350,12 @@ Checklist:
 
 ------------------------------------------------------------------------
 
-# Phase 14 -- Future Enhancements
+# Phase 17 -- Future Enhancements
 
 Potential upgrades:
 
 -   offline maps
--   route statistics
 -   elevation tracking
--   multi-session tracking
 -   cloud sync
 -   iOS version
 

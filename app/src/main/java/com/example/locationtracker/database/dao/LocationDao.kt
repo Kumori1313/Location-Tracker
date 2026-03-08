@@ -14,6 +14,9 @@ interface LocationDao {
     @Query("SELECT * FROM location_points ORDER BY timestamp ASC")
     fun getAllPoints(): Flow<List<LocationPoint>>
 
+    @Query("SELECT * FROM location_points WHERE sessionId = :sessionId ORDER BY timestamp ASC")
+    fun getPointsForSession(sessionId: Long): Flow<List<LocationPoint>>
+
     @Query("DELETE FROM location_points")
     suspend fun deleteAll()
 }

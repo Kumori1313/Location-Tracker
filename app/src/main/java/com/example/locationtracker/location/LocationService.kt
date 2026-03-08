@@ -29,15 +29,19 @@ class LocationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
+    private lateinit var repository: LocationRepository
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile private var currentSessionId: Long = -1L
+    @Volatile private var sessionStartTime: Long = 0L
 
     override fun onCreate() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         createNotificationChannel()
 
-        val dao = AppDatabase.getInstance(this).locationDao()
-        val repository = LocationRepository(dao)
+        val db = AppDatabase.getInstance(this)
+        repository = LocationRepository(db.locationDao(), db.sessionDao())
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
@@ -45,6 +49,7 @@ class LocationService : Service() {
                     serviceScope.launch {
                         repository.save(
                             LocationPoint(
+                                sessionId = currentSessionId.takeIf { it > 0 },
                                 latitude = location.latitude,
                                 longitude = location.longitude,
                                 timestamp = location.time,
@@ -78,6 +83,11 @@ class LocationService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
+        sessionStartTime = System.currentTimeMillis()
+        serviceScope.launch {
+            currentSessionId = repository.startSession(sessionStartTime)
+        }
+
         val minIntervalMs = (intervalMs / 2).coerceAtLeast(1_000L)
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
             .setMinUpdateIntervalMillis(minIntervalMs)
@@ -92,6 +102,16 @@ class LocationService : Service() {
 
     private fun stopTracking() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+
+        val sessionId = currentSessionId
+        val startTime = sessionStartTime
+        if (sessionId > 0) {
+            serviceScope.launch {
+                repository.closeSession(sessionId, startTime, System.currentTimeMillis())
+            }
+            currentSessionId = -1L
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
