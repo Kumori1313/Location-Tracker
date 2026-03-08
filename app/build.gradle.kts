@@ -78,6 +78,13 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
+    // Testing — coroutines
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // Testing — Room in-memory database
+    androidTestImplementation("androidx.room:room-testing:2.8.4")
+
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
