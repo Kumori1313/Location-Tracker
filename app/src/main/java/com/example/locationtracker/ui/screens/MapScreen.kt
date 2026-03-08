@@ -70,6 +70,7 @@ fun MapScreen(modifier: Modifier = Modifier) {
 
     var selectedSessionId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var hasCenteredCamera by remember { mutableStateOf(false) }
 
     val displayedPoints = remember(allPoints, selectedSessionId) {
         if (selectedSessionId == null) allPoints
@@ -86,11 +87,16 @@ fun MapScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(lastPoint) {
-        lastPoint?.let {
+    // Reset centering whenever the selected session changes
+    LaunchedEffect(selectedSessionId) { hasCenteredCamera = false }
+
+    // Only center once per session selection — preserves user zoom/pan after that
+    LaunchedEffect(lastPoint, hasCenteredCamera) {
+        if (lastPoint != null && !hasCenteredCamera) {
             cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f)
+                CameraUpdateFactory.newLatLngZoom(LatLng(lastPoint.latitude, lastPoint.longitude), 15f)
             )
+            hasCenteredCamera = true
         }
     }
 

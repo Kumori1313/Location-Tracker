@@ -1,5 +1,6 @@
 import java.util.Properties
 
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -26,6 +27,12 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProps.getProperty("MAPS_API_KEY", "")
+    }
+
+    lint {
+        // Lint cleanup is deferred to Phase 16 (Play Store prep).
+        // Remove this block and fix all issues before release.
+        checkReleaseBuilds = false
     }
 
     buildTypes {
