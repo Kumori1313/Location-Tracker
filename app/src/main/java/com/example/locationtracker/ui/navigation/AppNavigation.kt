@@ -2,9 +2,10 @@ package com.example.locationtracker.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -23,12 +24,14 @@ import com.example.locationtracker.ui.screens.ExportScreen
 import com.example.locationtracker.ui.screens.HistoryScreen
 import com.example.locationtracker.ui.screens.HomeScreen
 import com.example.locationtracker.ui.screens.MapScreen
+import com.example.locationtracker.ui.screens.SettingsScreen
 
 enum class Screen(val label: String, val icon: ImageVector, val route: String) {
     Home("Home", Icons.Default.Home, "home"),
     Map("Map", Icons.Default.LocationOn, "map"),
     History("History", Icons.AutoMirrored.Filled.List, "history"),
-    Export("Export", Icons.Default.Share, "export")
+    Export("Export", Icons.Default.Share, "export"),
+    Settings("Settings", Icons.Default.Settings, "settings")
 }
 
 @Composable
@@ -78,6 +81,7 @@ fun AppNavigation(
             composable(Screen.Map.route) { MapScreen() }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Export.route) { ExportScreen() }
+            composable(Screen.Settings.route) { SettingsScreen() }
         }
     }
 }

@@ -10,14 +10,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.locationtracker.location.LocationService
+import com.example.locationtracker.settings.SettingsRepository
 import com.example.locationtracker.ui.navigation.AppNavigation
 import com.example.locationtracker.ui.theme.LocationTrackerTheme
 import com.example.locationtracker.workers.LocationWorker
@@ -26,33 +29,39 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private var isTracking by mutableStateOf(false)
+    private var pendingIntervalMs = SettingsRepository.DEFAULT_INTERVAL_MS
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (locationGranted) startLocationService()
+        if (locationGranted) startLocationService(pendingIntervalMs)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LocationTrackerTheme {
+            val settingsRepo = remember { SettingsRepository(applicationContext) }
+            val darkMode by settingsRepo.darkMode.collectAsState(initial = false)
+            val intervalMs by settingsRepo.trackingIntervalMs.collectAsState(initial = SettingsRepository.DEFAULT_INTERVAL_MS)
+
+            LocationTrackerTheme(darkTheme = darkMode) {
                 AppNavigation(
                     modifier = Modifier.fillMaxSize(),
                     isTracking = isTracking,
-                    onStartTracking = ::onStartTracking,
+                    onStartTracking = { onStartTracking(intervalMs) },
                     onStopTracking = ::onStopTracking
                 )
             }
         }
     }
 
-    private fun onStartTracking() {
+    private fun onStartTracking(intervalMs: Long) {
+        pendingIntervalMs = intervalMs
         if (hasLocationPermission()) {
-            startLocationService()
+            startLocationService(intervalMs)
         } else {
             val permissions = buildList {
                 add(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -75,8 +84,12 @@ class MainActivity : ComponentActivity() {
         checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    private fun startLocationService() {
-        sendActionToService(LocationService.ACTION_START)
+    private fun startLocationService(intervalMs: Long) {
+        val intent = Intent(this, LocationService::class.java).apply {
+            action = LocationService.ACTION_START
+            putExtra(LocationService.EXTRA_INTERVAL_MS, intervalMs)
+        }
+        startForegroundService(intent)
         schedulePeriodicTracking()
         isTracking = true
     }

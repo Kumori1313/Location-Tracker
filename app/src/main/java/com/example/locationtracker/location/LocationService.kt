@@ -59,7 +59,10 @@ class LocationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startTracking()
+            ACTION_START -> {
+                val intervalMs = intent.getLongExtra(EXTRA_INTERVAL_MS, DEFAULT_INTERVAL_MS)
+                startTracking(intervalMs)
+            }
             ACTION_STOP -> stopTracking()
         }
         return START_STICKY
@@ -67,7 +70,7 @@ class LocationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun startTracking() {
+    private fun startTracking(intervalMs: Long) {
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
@@ -75,8 +78,9 @@ class LocationService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, INTERVAL_MS)
-            .setMinUpdateIntervalMillis(MIN_INTERVAL_MS)
+        val minIntervalMs = (intervalMs / 2).coerceAtLeast(1_000L)
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
+            .setMinUpdateIntervalMillis(minIntervalMs)
             .build()
 
         try {
@@ -129,9 +133,9 @@ class LocationService : Service() {
     companion object {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
+        const val EXTRA_INTERVAL_MS = "extra_interval_ms"
+        const val DEFAULT_INTERVAL_MS = 10_000L
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "location_tracking"
-        private const val INTERVAL_MS = 10_000L
-        private const val MIN_INTERVAL_MS = 5_000L
     }
 }

@@ -85,6 +85,9 @@ dependencies {
     // Testing — Room in-memory database
     androidTestImplementation("androidx.room:room-testing:2.8.4")
 
+    // DataStore (Settings persistence)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
 

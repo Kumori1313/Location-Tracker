@@ -12,10 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.example.locationtracker.R
 import com.example.locationtracker.database.AppDatabase
+import com.example.locationtracker.settings.SettingsRepository
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
@@ -40,6 +43,13 @@ fun MapScreen(modifier: Modifier = Modifier) {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    val darkMode by remember { SettingsRepository(context) }
+        .darkMode.collectAsState(initial = false)
+    val mapStyle = remember(darkMode) {
+        if (darkMode) MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_dark)
+        else null
+    }
+
     val lastPoint = points.lastOrNull()
     val latLngPoints = remember(points) { points.map { LatLng(it.latitude, it.longitude) } }
 
@@ -60,7 +70,10 @@ fun MapScreen(modifier: Modifier = Modifier) {
     GoogleMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
-        properties = MapProperties(isMyLocationEnabled = hasLocationPermission)
+        properties = MapProperties(
+            isMyLocationEnabled = hasLocationPermission,
+            mapStyleOptions = mapStyle
+        )
     ) {
         if (latLngPoints.size >= 2) {
             Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
