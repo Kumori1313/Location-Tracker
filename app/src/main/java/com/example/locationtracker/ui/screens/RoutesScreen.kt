@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.Route
+import com.example.locationtracker.ui.components.MapPickerDialog
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 
 @Composable
@@ -162,6 +165,38 @@ private fun RouteDialog(existing: Route?, onDismiss: () -> Unit, onSave: (Route)
     var endLng by remember { mutableStateOf(existing?.endLng?.toString() ?: "") }
     var radius by remember { mutableStateOf(existing?.arrivalRadiusMeters?.toInt()?.toString() ?: "50") }
     var nameError by remember { mutableStateOf(false) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
+
+    if (showStartPicker) {
+        MapPickerDialog(
+            title = "start point",
+            initialLatLng = startLat.toDoubleOrNull()?.let { lat ->
+                startLng.toDoubleOrNull()?.let { lng -> LatLng(lat, lng) }
+            },
+            onConfirm = { latLng ->
+                startLat = latLng.latitude.toString()
+                startLng = latLng.longitude.toString()
+                showStartPicker = false
+            },
+            onDismiss = { showStartPicker = false }
+        )
+    }
+
+    if (showEndPicker) {
+        MapPickerDialog(
+            title = "end point",
+            initialLatLng = endLat.toDoubleOrNull()?.let { lat ->
+                endLng.toDoubleOrNull()?.let { lng -> LatLng(lat, lng) }
+            },
+            onConfirm = { latLng ->
+                endLat = latLng.latitude.toString()
+                endLng = latLng.longitude.toString()
+                showEndPicker = false
+            },
+            onDismiss = { showEndPicker = false }
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -186,8 +221,23 @@ private fun RouteDialog(existing: Route?, onDismiss: () -> Unit, onSave: (Route)
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Start Point (optional)", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Start Point (optional)", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(
+                        onClick = { showStartPicker = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null,
+                            modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Pick on Map", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = startLat, onValueChange = { startLat = it },
@@ -203,8 +253,23 @@ private fun RouteDialog(existing: Route?, onDismiss: () -> Unit, onSave: (Route)
                     )
                 }
 
-                Text("End Point (optional)", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("End Point (optional)", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(
+                        onClick = { showEndPicker = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null,
+                            modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Pick on Map", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = endLat, onValueChange = { endLat = it },
