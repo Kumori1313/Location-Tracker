@@ -321,7 +321,7 @@ Support distinct, named tracking sessions rather than a single continuous log.
 
 ------------------------------------------------------------------------
 
-# Phase 15 -- Import
+# Phase 15 -- Import - Complete
 
 Allow previously exported files to be loaded back into the app.
 
