@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.Route
+import com.example.locationtracker.settings.SettingsRepository
 import com.example.locationtracker.ui.components.MapPickerDialog
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
@@ -31,12 +32,15 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     val routes by db.routeDao().getAllRoutes().collectAsState(initial = emptyList())
+    val defaultRadius by remember { SettingsRepository(context) }
+        .defaultArrivalRadiusMeters.collectAsState(initial = 50f)
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingRoute by remember { mutableStateOf<Route?>(null) }
 
     if (showCreateDialog || editingRoute != null) {
         RouteDialog(
             existing = editingRoute,
+            defaultRadiusMeters = defaultRadius,
             onDismiss = { showCreateDialog = false; editingRoute = null },
             onSave = { route ->
                 scope.launch {
@@ -157,13 +161,23 @@ private fun RouteCard(route: Route, onEdit: () -> Unit, onDelete: () -> Unit) {
 }
 
 @Composable
-private fun RouteDialog(existing: Route?, onDismiss: () -> Unit, onSave: (Route) -> Unit) {
+private fun RouteDialog(
+    existing: Route?,
+    defaultRadiusMeters: Float,
+    onDismiss: () -> Unit,
+    onSave: (Route) -> Unit
+) {
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var startLat by remember { mutableStateOf(existing?.startLat?.toString() ?: "") }
     var startLng by remember { mutableStateOf(existing?.startLng?.toString() ?: "") }
     var endLat by remember { mutableStateOf(existing?.endLat?.toString() ?: "") }
     var endLng by remember { mutableStateOf(existing?.endLng?.toString() ?: "") }
-    var radius by remember { mutableStateOf(existing?.arrivalRadiusMeters?.toInt()?.toString() ?: "50") }
+    var radius by remember {
+        mutableStateOf(
+            existing?.arrivalRadiusMeters?.toInt()?.toString()
+                ?: defaultRadiusMeters.toInt().toString()
+        )
+    }
     var nameError by remember { mutableStateOf(false) }
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }

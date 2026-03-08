@@ -353,7 +353,7 @@ Allow users to define named routes with explicit start and end points.
 
 ------------------------------------------------------------------------
 
-# Phase 18 -- Auto-Stop on Arrival
+# Phase 18 -- Auto-Stop on Arrival - Complete
 
 Automatically stop tracking when the device enters a configurable radius around the route destination.
 

@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,10 @@ class SettingsRepository(private val context: Context) {
         prefs[DARK_MODE] ?: false
     }
 
+    val defaultArrivalRadiusMeters: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[DEFAULT_ARRIVAL_RADIUS_M] ?: 50f
+    }
+
     suspend fun setTrackingInterval(ms: Long) {
         context.dataStore.edit { it[TRACKING_INTERVAL_MS] = ms }
     }
@@ -30,9 +35,14 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[DARK_MODE] = enabled }
     }
 
+    suspend fun setDefaultArrivalRadius(meters: Float) {
+        context.dataStore.edit { it[DEFAULT_ARRIVAL_RADIUS_M] = meters }
+    }
+
     companion object {
         const val DEFAULT_INTERVAL_MS = 10_000L
         private val TRACKING_INTERVAL_MS = longPreferencesKey("tracking_interval_ms")
         private val DARK_MODE = booleanPreferencesKey("dark_mode")
+        private val DEFAULT_ARRIVAL_RADIUS_M = floatPreferencesKey("default_arrival_radius_m")
     }
 }

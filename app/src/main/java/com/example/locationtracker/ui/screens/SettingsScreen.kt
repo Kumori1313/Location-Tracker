@@ -21,6 +21,13 @@ private val INTERVAL_OPTIONS = listOf(
     60_000L to "60 seconds"
 )
 
+private val RADIUS_OPTIONS = listOf(
+    25f to "25 meters",
+    50f to "50 meters",
+    100f to "100 meters",
+    200f to "200 meters"
+)
+
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -29,6 +36,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
     val intervalMs by repo.trackingIntervalMs.collectAsState(initial = SettingsRepository.DEFAULT_INTERVAL_MS)
     val darkMode by repo.darkMode.collectAsState(initial = false)
+    val defaultRadius by repo.defaultArrivalRadiusMeters.collectAsState(initial = 50f)
 
     Column(
         modifier = modifier
@@ -81,6 +89,31 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 checked = darkMode,
                 onCheckedChange = { scope.launch { repo.setDarkMode(it) } }
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Route Defaults", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Default arrival radius used when creating new routes.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        RADIUS_OPTIONS.forEach { (meters, label) ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                RadioButton(
+                    selected = defaultRadius == meters,
+                    onClick = { scope.launch { repo.setDefaultArrivalRadius(meters) } }
+                )
+                Text(label, style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
