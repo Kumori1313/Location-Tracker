@@ -95,6 +95,9 @@ dependencies {
     // DataStore (Settings persistence)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // Extended Material Icons (Routes tab icon)
+    implementation("androidx.compose.material:material-icons-extended")
+
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
 

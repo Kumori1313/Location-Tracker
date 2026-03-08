@@ -17,8 +17,8 @@ class LocationRepository(
 
     suspend fun clearAll() = locationDao.deleteAll()
 
-    suspend fun startSession(startTime: Long): Long =
-        sessionDao.insert(Session(startTime = startTime))
+    suspend fun startSession(startTime: Long, routeId: Long? = null): Long =
+        sessionDao.insert(Session(startTime = startTime, routeId = routeId))
 
     suspend fun closeSession(id: Long, startTime: Long, endTime: Long) {
         sessionDao.update(

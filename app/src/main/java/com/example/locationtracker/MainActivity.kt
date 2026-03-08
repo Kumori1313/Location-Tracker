@@ -30,13 +30,14 @@ class MainActivity : ComponentActivity() {
 
     private var isTracking by mutableStateOf(false)
     private var pendingIntervalMs = SettingsRepository.DEFAULT_INTERVAL_MS
+    private var pendingRouteId: Long? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (locationGranted) startLocationService(pendingIntervalMs)
+        if (locationGranted) startLocationService(pendingIntervalMs, pendingRouteId)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,17 +52,18 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(
                     modifier = Modifier.fillMaxSize(),
                     isTracking = isTracking,
-                    onStartTracking = { onStartTracking(intervalMs) },
+                    onStartTracking = { routeId -> onStartTracking(intervalMs, routeId) },
                     onStopTracking = ::onStopTracking
                 )
             }
         }
     }
 
-    private fun onStartTracking(intervalMs: Long) {
+    private fun onStartTracking(intervalMs: Long, routeId: Long?) {
         pendingIntervalMs = intervalMs
+        pendingRouteId = routeId
         if (hasLocationPermission()) {
-            startLocationService(intervalMs)
+            startLocationService(intervalMs, routeId)
         } else {
             val permissions = buildList {
                 add(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -84,10 +86,11 @@ class MainActivity : ComponentActivity() {
         checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    private fun startLocationService(intervalMs: Long) {
+    private fun startLocationService(intervalMs: Long, routeId: Long?) {
         val intent = Intent(this, LocationService::class.java).apply {
             action = LocationService.ACTION_START
             putExtra(LocationService.EXTRA_INTERVAL_MS, intervalMs)
+            routeId?.let { putExtra(LocationService.EXTRA_ROUTE_ID, it) }
         }
         startForegroundService(intent)
         schedulePeriodicTracking()

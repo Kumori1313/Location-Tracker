@@ -34,6 +34,7 @@ class LocationService : Service() {
 
     @Volatile private var currentSessionId: Long = -1L
     @Volatile private var sessionStartTime: Long = 0L
+    @Volatile private var currentRouteId: Long? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -66,7 +67,10 @@ class LocationService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val intervalMs = intent.getLongExtra(EXTRA_INTERVAL_MS, DEFAULT_INTERVAL_MS)
-                startTracking(intervalMs)
+                val routeId = if (intent.hasExtra(EXTRA_ROUTE_ID))
+                    intent.getLongExtra(EXTRA_ROUTE_ID, -1L).takeIf { it > 0 }
+                else null
+                startTracking(intervalMs, routeId)
             }
             ACTION_STOP -> stopTracking()
         }
@@ -75,7 +79,8 @@ class LocationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun startTracking(intervalMs: Long) {
+    private fun startTracking(intervalMs: Long, routeId: Long? = null) {
+        currentRouteId = routeId
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
@@ -85,7 +90,7 @@ class LocationService : Service() {
 
         sessionStartTime = System.currentTimeMillis()
         serviceScope.launch {
-            currentSessionId = repository.startSession(sessionStartTime)
+            currentSessionId = repository.startSession(sessionStartTime, currentRouteId)
         }
 
         val minIntervalMs = (intervalMs / 2).coerceAtLeast(1_000L)
@@ -154,6 +159,7 @@ class LocationService : Service() {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val EXTRA_INTERVAL_MS = "extra_interval_ms"
+        const val EXTRA_ROUTE_ID = "extra_route_id"
         const val DEFAULT_INTERVAL_MS = 10_000L
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "location_tracking"

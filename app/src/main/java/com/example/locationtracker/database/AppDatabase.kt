@@ -7,19 +7,22 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.locationtracker.database.dao.LocationDao
+import com.example.locationtracker.database.dao.RouteDao
 import com.example.locationtracker.database.dao.SessionDao
 import com.example.locationtracker.database.entities.LocationPoint
+import com.example.locationtracker.database.entities.Route
 import com.example.locationtracker.database.entities.Session
 
 @Database(
-    entities = [LocationPoint::class, Session::class],
-    version = 3,
+    entities = [LocationPoint::class, Session::class, Route::class],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun locationDao(): LocationDao
     abstract fun sessionDao(): SessionDao
+    abstract fun routeDao(): RouteDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -69,6 +72,23 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `routes` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `startLat` REAL DEFAULT NULL,
+                        `startLng` REAL DEFAULT NULL,
+                        `endLat` REAL DEFAULT NULL,
+                        `endLng` REAL DEFAULT NULL,
+                        `arrivalRadiusMeters` REAL NOT NULL DEFAULT 50
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE `sessions` ADD COLUMN `routeId` INTEGER DEFAULT NULL")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -76,7 +96,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "location_tracker.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build().also { INSTANCE = it }
             }
     }

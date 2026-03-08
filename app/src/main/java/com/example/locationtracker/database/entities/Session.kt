@@ -9,5 +9,6 @@ data class Session(
     val startTime: Long,
     val endTime: Long = 0L,      // 0 = still active
     val durationMs: Long = 0L,
-    val name: String? = null     // null = use formatted date as display label
+    val name: String? = null,    // null = use formatted date as display label
+    val routeId: Long? = null    // links session to a saved Route (Phase 17+)
 )

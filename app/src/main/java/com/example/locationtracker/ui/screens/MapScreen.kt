@@ -30,10 +30,13 @@ import com.example.locationtracker.R
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.Session
 import com.example.locationtracker.settings.SettingsRepository
+import com.example.locationtracker.database.entities.Route
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
@@ -71,6 +74,13 @@ fun MapScreen(modifier: Modifier = Modifier) {
     var selectedSessionId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var hasCenteredCamera by remember { mutableStateOf(false) }
+    var activeRoute by remember { mutableStateOf<Route?>(null) }
+
+    // Load route associated with the selected session
+    LaunchedEffect(selectedSessionId, sessions) {
+        val routeId = sessions.firstOrNull { it.id == selectedSessionId }?.routeId
+        activeRoute = routeId?.let { db.routeDao().getById(it) }
+    }
 
     val displayedPoints = remember(allPoints, selectedSessionId) {
         if (selectedSessionId == null) allPoints
@@ -117,6 +127,31 @@ fun MapScreen(modifier: Modifier = Modifier) {
                     state = MarkerState(position = LatLng(it.latitude, it.longitude)),
                     title = "Latest fix"
                 )
+            }
+
+            // Route start/end markers
+            activeRoute?.let { route ->
+                if (route.startLat != null && route.startLng != null) {
+                    Marker(
+                        state = MarkerState(LatLng(route.startLat, route.startLng)),
+                        title = "Start: ${route.name}",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                    )
+                }
+                if (route.endLat != null && route.endLng != null) {
+                    Marker(
+                        state = MarkerState(LatLng(route.endLat, route.endLng)),
+                        title = "End: ${route.name}",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    )
+                    Circle(
+                        center = LatLng(route.endLat, route.endLng),
+                        radius = route.arrivalRadiusMeters.toDouble(),
+                        strokeColor = Color.Red,
+                        fillColor = Color.Red.copy(alpha = 0.12f),
+                        strokeWidth = 2f
+                    )
+                }
             }
         }
 

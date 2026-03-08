@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
@@ -24,6 +25,7 @@ import com.example.locationtracker.ui.screens.ExportScreen
 import com.example.locationtracker.ui.screens.HistoryScreen
 import com.example.locationtracker.ui.screens.HomeScreen
 import com.example.locationtracker.ui.screens.MapScreen
+import com.example.locationtracker.ui.screens.RoutesScreen
 import com.example.locationtracker.ui.screens.SettingsScreen
 
 enum class Screen(val label: String, val icon: ImageVector, val route: String) {
@@ -31,6 +33,7 @@ enum class Screen(val label: String, val icon: ImageVector, val route: String) {
     Map("Map", Icons.Default.LocationOn, "map"),
     History("History", Icons.AutoMirrored.Filled.List, "history"),
     Export("Export", Icons.Default.Share, "export"),
+    Routes("Routes", Icons.Default.Route, "routes"),
     Settings("Settings", Icons.Default.Settings, "settings")
 }
 
@@ -38,7 +41,7 @@ enum class Screen(val label: String, val icon: ImageVector, val route: String) {
 fun AppNavigation(
     modifier: Modifier = Modifier,
     isTracking: Boolean,
-    onStartTracking: () -> Unit,
+    onStartTracking: (routeId: Long?) -> Unit,
     onStopTracking: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -81,6 +84,7 @@ fun AppNavigation(
             composable(Screen.Map.route) { MapScreen() }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Export.route) { ExportScreen() }
+            composable(Screen.Routes.route) { RoutesScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
         }
     }
