@@ -32,6 +32,10 @@ class SettingsRepository(private val context: Context) {
         prefs[DATE_FILTER_RANGE_MODE] ?: true
     }
 
+    val showLatestFixMarker: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[SHOW_LATEST_FIX_MARKER] ?: true
+    }
+
     suspend fun setTrackingInterval(ms: Long) {
         context.dataStore.edit { it[TRACKING_INTERVAL_MS] = ms }
     }
@@ -48,11 +52,16 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[DATE_FILTER_RANGE_MODE] = rangeMode }
     }
 
+    suspend fun setShowLatestFixMarker(show: Boolean) {
+        context.dataStore.edit { it[SHOW_LATEST_FIX_MARKER] = show }
+    }
+
     companion object {
         const val DEFAULT_INTERVAL_MS = 10_000L
         private val TRACKING_INTERVAL_MS = longPreferencesKey("tracking_interval_ms")
         private val DARK_MODE = booleanPreferencesKey("dark_mode")
         private val DEFAULT_ARRIVAL_RADIUS_M = floatPreferencesKey("default_arrival_radius_m")
         private val DATE_FILTER_RANGE_MODE = booleanPreferencesKey("date_filter_range_mode")
+        private val SHOW_LATEST_FIX_MARKER = booleanPreferencesKey("show_latest_fix_marker")
     }
 }

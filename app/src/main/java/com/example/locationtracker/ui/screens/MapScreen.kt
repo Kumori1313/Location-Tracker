@@ -170,7 +170,11 @@ fun MapScreen(
                 Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
             }
             lastPointMarkerState?.let {
-                Marker(state = it, title = "Latest fix")
+                Marker(
+                    state = it,
+                    title = "Latest fix",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                )
             }
 
             // Route start/end markers

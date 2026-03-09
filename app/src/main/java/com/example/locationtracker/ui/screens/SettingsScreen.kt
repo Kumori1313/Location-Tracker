@@ -36,6 +36,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
     val intervalMs by repo.trackingIntervalMs.collectAsState(initial = SettingsRepository.DEFAULT_INTERVAL_MS)
     val darkMode by repo.darkMode.collectAsState(initial = false)
+    val showLatestFixMarker by repo.showLatestFixMarker.collectAsState(initial = true)
     val defaultRadius by repo.defaultArrivalRadiusMeters.collectAsState(initial = 50f)
 
     Column(
