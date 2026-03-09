@@ -415,7 +415,7 @@ Record and aggregate travel time on a per-route basis, not just per session.
 
 ------------------------------------------------------------------------
 
-# Phase 22 -- Route Map: Center on Current Location
+# Phase 22 -- Route Map: Center on Current Location - Complete
 
 When the map picker used for selecting route start/end coordinates loads, automatically center on the user's current location.
 

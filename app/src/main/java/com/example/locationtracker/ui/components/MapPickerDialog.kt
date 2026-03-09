@@ -12,14 +12,20 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.locationtracker.R
 import com.example.locationtracker.settings.SettingsRepository
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 @Composable
 fun MapPickerDialog(
@@ -43,6 +49,32 @@ fun MapPickerDialog(
             initialLatLng ?: LatLng(20.0, 0.0),
             if (initialLatLng != null) 14f else 2f
         )
+    }
+
+    // If no initial location was provided, center on the device's current position
+    if (initialLatLng == null) {
+        val fusedLocationClient = remember {
+            LocationServices.getFusedLocationProviderClient(context)
+        }
+        LaunchedEffect(Unit) {
+            try {
+                val cts = CancellationTokenSource()
+                val location = suspendCancellableCoroutine { cont ->
+                    fusedLocationClient
+                        .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+                        .addOnSuccessListener { cont.resume(it) }
+                        .addOnFailureListener { cont.resume(null) }
+                    cont.invokeOnCancellation { cts.cancel() }
+                }
+                location?.let {
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 16f)
+                    )
+                }
+            } catch (_: SecurityException) {
+                // Permission not granted — stay at default world view
+            }
+        }
     }
 
     Dialog(
