@@ -92,6 +92,25 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Show Latest Fix Marker", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Display the blue marker for the most recent GPS point.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = showLatestFixMarker,
+                onCheckedChange = { scope.launch { repo.setShowLatestFixMarker(it) } }
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))

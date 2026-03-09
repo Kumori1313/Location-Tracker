@@ -85,8 +85,9 @@ fun MapScreen(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    val darkMode by remember { SettingsRepository(context) }
-        .darkMode.collectAsState(initial = false)
+    val settingsRepo = remember { SettingsRepository(context) }
+    val darkMode by settingsRepo.darkMode.collectAsState(initial = false)
+    val showLatestFixMarker by settingsRepo.showLatestFixMarker.collectAsState(initial = true)
     val mapStyle = remember(darkMode) {
         if (darkMode) MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_dark)
         else null
@@ -169,12 +170,14 @@ fun MapScreen(
             if (latLngPoints.size >= 2) {
                 Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
             }
-            lastPointMarkerState?.let {
-                Marker(
-                    state = it,
-                    title = "Latest fix",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                )
+            if (showLatestFixMarker) {
+                lastPointMarkerState?.let {
+                    Marker(
+                        state = it,
+                        title = "Latest fix",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    )
+                }
             }
 
             // Route start/end markers
