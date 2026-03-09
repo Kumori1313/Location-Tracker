@@ -74,6 +74,11 @@ fun MapPickerDialog(
         } catch (_: Exception) { null }
     }
 
+    // Stable MarkerState outside GoogleMap content lambda (no remember inside @GoogleMapComposable)
+    val pickedMarkerState = remember(pickedLocation) {
+        pickedLocation?.let { MarkerState(position = it) }
+    }
+
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             initialLatLng ?: LatLng(20.0, 0.0),
@@ -157,8 +162,8 @@ fun MapPickerDialog(
                     suggestions = emptyList()
                 }
             ) {
-                pickedLocation?.let {
-                    Marker(state = MarkerState(position = it), title = title)
+                pickedMarkerState?.let {
+                    Marker(state = it, title = title)
                 }
             }
 
@@ -188,7 +193,11 @@ fun MapPickerDialog(
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
-                Card {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    )
+                ) {
                     OutlinedTextField(
                         value = searchText,
                         onValueChange = { searchText = it },
@@ -210,7 +219,11 @@ fun MapPickerDialog(
 
                 if (suggestions.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
-                    Card {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                             items(suggestions) { prediction ->
                                 Column(
@@ -249,7 +262,8 @@ fun MapPickerDialog(
                                 ) {
                                     Text(
                                         prediction.getPrimaryText(null).toString(),
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         prediction.getSecondaryText(null).toString(),

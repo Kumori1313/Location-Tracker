@@ -127,6 +127,22 @@ fun MapScreen(
     // Reset centering whenever the selected session changes
     LaunchedEffect(selectedSessionId) { hasCenteredCamera = false }
 
+    // Stable MarkerStates — must live outside GoogleMap content lambda (no remember inside @GoogleMapComposable)
+    val lastPointMarkerState = remember(lastPoint?.latitude, lastPoint?.longitude) {
+        lastPoint?.let { MarkerState(position = LatLng(it.latitude, it.longitude)) }
+    }
+    val displayedRoute = selectedRoute ?: activeRoute
+    val startMarkerState = remember(displayedRoute?.id, displayedRoute?.startLat, displayedRoute?.startLng) {
+        displayedRoute?.startLat?.let { lat ->
+            displayedRoute?.startLng?.let { lng -> MarkerState(LatLng(lat, lng)) }
+        }
+    }
+    val endMarkerState = remember(displayedRoute?.id, displayedRoute?.endLat, displayedRoute?.endLng) {
+        displayedRoute?.endLat?.let { lat ->
+            displayedRoute?.endLng?.let { lng -> MarkerState(LatLng(lat, lng)) }
+        }
+    }
+
     // Only center once per session selection — preserves user zoom/pan after that
     LaunchedEffect(lastPoint, hasCenteredCamera) {
         if (lastPoint != null && !hasCenteredCamera) {
@@ -153,30 +169,27 @@ fun MapScreen(
             if (latLngPoints.size >= 2) {
                 Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
             }
-            lastPoint?.let {
-                Marker(
-                    state = MarkerState(position = LatLng(it.latitude, it.longitude)),
-                    title = "Latest fix"
-                )
+            lastPointMarkerState?.let {
+                Marker(state = it, title = "Latest fix")
             }
 
             // Route start/end markers
-            activeRoute?.let { route ->
-                if (route.startLat != null && route.startLng != null) {
+            displayedRoute?.let { route ->
+                startMarkerState?.let {
                     Marker(
-                        state = MarkerState(LatLng(route.startLat, route.startLng)),
+                        state = it,
                         title = "Start: ${route.name}",
                         icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
                     )
                 }
-                if (route.endLat != null && route.endLng != null) {
+                endMarkerState?.let { endState ->
                     Marker(
-                        state = MarkerState(LatLng(route.endLat, route.endLng)),
+                        state = endState,
                         title = "End: ${route.name}",
                         icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                     )
                     Circle(
-                        center = LatLng(route.endLat, route.endLng),
+                        center = endState.position,
                         radius = route.arrivalRadiusMeters.toDouble(),
                         strokeColor = Color.Red,
                         fillColor = Color.Red.copy(alpha = 0.12f),

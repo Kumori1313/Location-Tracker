@@ -19,7 +19,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.LocationPoint
@@ -58,10 +60,10 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
     val datePickerState = rememberDatePickerState()
     var filterStartMs by remember { mutableStateOf<Long?>(null) }
     var filterEndMs by remember { mutableStateOf<Long?>(null) }
-    var filterMinText by remember { mutableStateOf("") }
-    var filterMaxText by remember { mutableStateOf("") }
-    val filterMinMs = remember(filterMinText) { filterMinText.toIntOrNull()?.let { it * 60_000L } }
-    val filterMaxMs = remember(filterMaxText) { filterMaxText.toIntOrNull()?.let { it * 60_000L } }
+    var filterMinValue by remember { mutableStateOf(TextFieldValue()) }
+    var filterMaxValue by remember { mutableStateOf(TextFieldValue()) }
+    val filterMinMs = remember(filterMinValue.text) { parseTimeInput(filterMinValue.text) }
+    val filterMaxMs = remember(filterMaxValue.text) { parseTimeInput(filterMaxValue.text) }
 
     val nameSdf = remember { SimpleDateFormat("MMM dd, yyyy  HH:mm", Locale.getDefault()) }
 
@@ -193,24 +195,39 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
 
             // Duration range inputs
-            OutlinedTextField(
-                value = filterMinText,
-                onValueChange = { filterMinText = it },
-                label = { Text("Min") },
-                suffix = { Text("m") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.width(80.dp)
-            )
-            OutlinedTextField(
-                value = filterMaxText,
-                onValueChange = { filterMaxText = it },
-                label = { Text("Max") },
-                suffix = { Text("m") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.width(80.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "Time",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = filterMinValue,
+                    onValueChange = { filterMinValue = formatTimeInputValue(it) },
+                    placeholder = { Text("Min", style = MaterialTheme.typography.bodySmall) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.width(80.dp)
+                )
+                Text(
+                    "–",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = filterMaxValue,
+                    onValueChange = { filterMaxValue = formatTimeInputValue(it) },
+                    placeholder = { Text("Max", style = MaterialTheme.typography.bodySmall) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.width(80.dp)
+                )
+            }
         }
 
         // Content
@@ -483,6 +500,47 @@ private fun LocationPointItem(point: LocationPoint, indented: Boolean = false) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/** Auto-inserts colons as the user types digits, producing hh:mm:ss, with correct cursor position. */
+private fun formatTimeInputValue(new: TextFieldValue): TextFieldValue {
+    val digitsBeforeCursor = new.text.take(new.selection.start).count { it.isDigit() }
+    val digits = new.text.filter { it.isDigit() }.take(6)
+    val formatted = buildString {
+        digits.forEachIndexed { i, c ->
+            if (i == 2 || i == 4) append(':')
+            append(c)
+        }
+    }
+    // Place cursor after the same number of digits as were before it in the raw input
+    var counted = 0
+    var cursorPos = formatted.length
+    if (digitsBeforeCursor == 0) {
+        cursorPos = 0
+    } else {
+        for (i in formatted.indices) {
+            if (formatted[i].isDigit()) {
+                counted++
+                if (counted == digitsBeforeCursor) {
+                    cursorPos = i + 1
+                    break
+                }
+            }
+        }
+    }
+    return TextFieldValue(formatted, TextRange(cursorPos))
+}
+
+/** Parses a hh:mm:ss string to milliseconds, or null if blank/invalid. */
+private fun parseTimeInput(text: String): Long? {
+    if (text.isBlank()) return null
+    val parts = text.split(":")
+    if (parts.size != 3) return null
+    val h = parts[0].toLongOrNull() ?: return null
+    val m = parts[1].toLongOrNull() ?: return null
+    val s = parts[2].toLongOrNull() ?: return null
+    if (m >= 60 || s >= 60) return null
+    return (h * 3600L + m * 60L + s) * 1000L
 }
 
 private fun formatDuration(ms: Long): String {
