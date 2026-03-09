@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -167,13 +168,24 @@ fun MapPickerDialog(
                 }
             }
 
-            // Zoom controls — top right
+            // My-location + zoom controls — top right
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 80.dp, end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                FilledTonalIconButton(onClick = {
+                    scope.launch {
+                        currentLocation?.let { loc ->
+                            cameraPositionState.animate(
+                                com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(loc, 16f)
+                            )
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.MyLocation, contentDescription = "My location")
+                }
                 FilledTonalIconButton(onClick = {
                     cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomIn())
                 }) {

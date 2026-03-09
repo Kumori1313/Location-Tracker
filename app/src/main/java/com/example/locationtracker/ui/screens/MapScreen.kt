@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalIconButton
@@ -32,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +49,14 @@ import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.Route
 import com.example.locationtracker.database.entities.Session
 import com.example.locationtracker.settings.SettingsRepository
+import com.example.locationtracker.ui.components.HelpDialog
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -71,6 +83,8 @@ fun MapScreen(
 ) {
     val context = LocalContext.current
     val db = AppDatabase.getInstance(context)
+    val scope = rememberCoroutineScope()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     val allPoints by db.locationDao().getAllPoints().collectAsState(initial = emptyList())
     val sessions by db.sessionDao().getAllCompletedByDate().collectAsState(initial = emptyList())
@@ -100,6 +114,7 @@ fun MapScreen(
 
     var selectedRoute by remember { mutableStateOf<Route?>(null) }
     var routeDropdownExpanded by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
 
     // Clear route selection when tracking stops
     LaunchedEffect(isTracking) { if (!isTracking) selectedRoute = null }
@@ -165,7 +180,7 @@ fun MapScreen(
                 isMyLocationEnabled = hasLocationPermission,
                 mapStyleOptions = mapStyle
             ),
-            uiSettings = MapUiSettings(zoomControlsEnabled = false)
+            uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false)
         ) {
             if (latLngPoints.size >= 2) {
                 Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
@@ -241,13 +256,37 @@ fun MapScreen(
             }
         }
 
-        // Zoom controls — top end (below the my-location button)
+        // My-location + zoom controls — top end
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 100.dp, end = 8.dp),
+                .padding(top = 8.dp, end = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            FilledTonalIconButton(onClick = {
+                if (hasLocationPermission) {
+                    scope.launch {
+                        try {
+                            val cts = CancellationTokenSource()
+                            val loc = suspendCancellableCoroutine { cont ->
+                                fusedLocationClient
+                                    .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+                                    .addOnSuccessListener { cont.resume(it) }
+                                    .addOnFailureListener { cont.resume(null) }
+                                cont.invokeOnCancellation { cts.cancel() }
+                            }
+                            loc?.let {
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 16f)
+                                )
+                            }
+                        } catch (_: SecurityException) {}
+                    }
+                }
+            }) {
+                Icon(Icons.Default.MyLocation, contentDescription = "My location")
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             FilledTonalIconButton(onClick = {
                 cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomIn())
             }) {
@@ -258,6 +297,23 @@ fun MapScreen(
             }) {
                 Icon(Icons.Default.Remove, contentDescription = "Zoom out")
             }
+        }
+
+        // Help button — bottom end, level with the Google watermark
+        FilledTonalIconButton(
+            onClick = { showHelp = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    bottom = if (routes.isNotEmpty() && !isTracking) 164.dp else 88.dp,
+                    end = 8.dp
+                )
+        ) {
+            Icon(Icons.Default.Help, contentDescription = "Help")
+        }
+
+        if (showHelp) {
+            HelpDialog(onDismiss = { showHelp = false })
         }
 
         // Tracking controls — bottom overlay

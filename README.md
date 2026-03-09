@@ -1,4 +1,4 @@
-# Android Location Tracker -- Development Roadmap
+Can you create a phase for the following: info tab that is accessible via a question mark button located across from the google watermark on the map tab. Host a tutorial for all features. Include the functionality of buttons without labels in here (e.g., the plus and minus buttons of the map views zoom in and out of the map, but you can alternatively pinch to zoom). Add the same buttons within the info/help screen but functionless so the user knows how they look visually.# Android Location Tracker -- Development Roadmap
 
 ## Project Overview
 
@@ -447,7 +447,37 @@ Allow users to specify route start/end points by address or by searching for a p
 
 ------------------------------------------------------------------------
 
-# Phase 24 -- Play Store Preparation
+# Phase 24 -- In-App Help & Tutorial - Complete
+
+Provide an accessible tutorial covering all app features, including visual replicas of unlabelled buttons.
+
+### Entry Point
+
+-   A `?` (`Help`) button rendered as a `FilledTonalIconButton` at the bottom-right of the Map tab, positioned level with the Google watermark
+-   Tapping it opens a full-screen `HelpDialog` (uses `usePlatformDefaultWidth = false` Dialog with a `Scaffold` + `TopAppBar`)
+
+### Content Sections
+
+-   **Map Tab** — trail display, session selector, route selector, Start/Stop tracking, zoom controls, centering button, help button
+-   **History Tab** — session list, search bar, date filter (range/single), time filter (hh:mm:ss), session menu (rename/delete)
+-   **Routes Tab** — route creation, search bar, route stats, route menu (edit/delete)
+-   **Map Coordinate Picker** — tap-to-pin, address search, zoom controls, centering button, Confirm/Clear/Cancel
+-   **Export Tab** — CSV/GPX/JSON formats
+-   **Settings Tab** — tracking interval, dark mode, latest fix marker toggle, arrival radius
+
+### Visual Button Replicas
+
+-   Non-functional `FilledTonalIconButton` instances shown inline for: zoom in (+), zoom out (−), center on location, and help (?)
+-   Allows users to recognise buttons by appearance before encountering them on the map
+
+### Implementation
+
+-   `ui/components/HelpDialog.kt` — self-contained composable with `LazyColumn` sections
+-   Internal helpers: `SectionHeader`, `HelpCard`, `HelpParagraph`, `HelpNote`, `HelpDivider`, `HelpRow`
+
+------------------------------------------------------------------------
+
+# Phase 25 -- Play Store Preparation
 
 Requirements:
 
@@ -469,7 +499,7 @@ Checklist:
 
 ------------------------------------------------------------------------
 
-# Phase 25 -- Future Enhancements
+# Phase 26 -- Future Enhancements
 
 Potential upgrades:
 
