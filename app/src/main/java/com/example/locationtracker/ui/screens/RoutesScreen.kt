@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.locationtracker.database.AppDatabase
 import com.example.locationtracker.database.entities.Route
+import com.example.locationtracker.database.entities.RouteStats
 import com.example.locationtracker.settings.SettingsRepository
 import com.example.locationtracker.ui.components.MapPickerDialog
 import com.google.android.gms.maps.model.LatLng
@@ -34,6 +35,7 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     val routes by db.routeDao().getAllRoutes().collectAsState(initial = emptyList())
+    val statsPerRoute by db.routeDao().getStatsPerRoute().collectAsState(initial = emptyList())
     val defaultRadius by remember { SettingsRepository(context) }
         .defaultArrivalRadiusMeters.collectAsState(initial = 50f)
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -106,6 +108,7 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
                         items(filteredRoutes, key = { it.id }) { route ->
                             RouteCard(
                                 route = route,
+                                stats = statsPerRoute.firstOrNull { it.routeId == route.id },
                                 onEdit = { editingRoute = route },
                                 onDelete = { scope.launch { db.routeDao().deleteById(route.id) } }
                             )
@@ -128,7 +131,7 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun RouteCard(route: Route, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun RouteCard(route: Route, stats: RouteStats?, onEdit: () -> Unit, onDelete: () -> Unit) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -173,6 +176,14 @@ private fun RouteCard(route: Route, onEdit: () -> Unit, onDelete: () -> Unit) {
             Text("Arrival radius: ${route.arrivalRadiusMeters.toInt()} m",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (stats != null) {
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    RouteStatChip("Runs", "${stats.sessionCount}")
+                    RouteStatChip("Fastest", formatRouteDuration(stats.fastestMs))
+                    RouteStatChip("Average", formatRouteDuration(stats.averageMs))
+                }
+            }
         }
         Box {
             IconButton(onClick = { menuExpanded = true }) {
@@ -193,6 +204,22 @@ private fun RouteCard(route: Route, onEdit: () -> Unit, onDelete: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun RouteStatChip(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleSmall)
+        Text(label, style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun formatRouteDuration(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
 }
 
 @Composable

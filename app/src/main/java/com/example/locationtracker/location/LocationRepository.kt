@@ -20,13 +20,14 @@ class LocationRepository(
     suspend fun startSession(startTime: Long, routeId: Long? = null): Long =
         sessionDao.insert(Session(startTime = startTime, routeId = routeId))
 
-    suspend fun closeSession(id: Long, startTime: Long, endTime: Long) {
+    suspend fun closeSession(id: Long, startTime: Long, endTime: Long, routeId: Long? = null) {
         sessionDao.update(
             Session(
                 id = id,
                 startTime = startTime,
                 endTime = endTime,
-                durationMs = endTime - startTime
+                durationMs = endTime - startTime,
+                routeId = routeId
             )
         )
     }

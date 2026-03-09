@@ -144,9 +144,10 @@ class LocationService : Service() {
 
         val sessionId = currentSessionId
         val startTime = sessionStartTime
+        val routeId = currentRouteId
         if (sessionId > 0) {
             serviceScope.launch {
-                repository.closeSession(sessionId, startTime, System.currentTimeMillis())
+                repository.closeSession(sessionId, startTime, System.currentTimeMillis(), routeId)
             }
             currentSessionId = -1L
         }
