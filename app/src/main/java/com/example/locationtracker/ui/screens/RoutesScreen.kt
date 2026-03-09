@@ -8,8 +8,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +38,11 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
         .defaultArrivalRadiusMeters.collectAsState(initial = 50f)
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingRoute by remember { mutableStateOf<Route?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredRoutes = remember(routes, searchQuery) {
+        if (searchQuery.isBlank()) routes
+        else routes.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
 
     if (showCreateDialog || editingRoute != null) {
         RouteDialog(
@@ -53,8 +60,8 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
         )
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        if (routes.isEmpty()) {
+    if (routes.isEmpty()) {
+        Box(modifier = modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -65,28 +72,56 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
                     Text("Create Route")
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp) // space for FAB
-            ) {
-                items(routes, key = { it.id }) { route ->
-                    RouteCard(
-                        route = route,
-                        onEdit = { editingRoute = route },
-                        onDelete = { scope.launch { db.routeDao().deleteById(route.id) } }
-                    )
-                    HorizontalDivider()
-                }
-            }
-
-            FloatingActionButton(
-                onClick = { showCreateDialog = true },
+        }
+    } else {
+        Column(modifier = modifier.fillMaxSize()) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search routes…") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = if (searchQuery.isNotEmpty()) ({
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    }
+                }) else null,
+                singleLine = true,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create route")
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (filteredRoutes.isEmpty()) {
+                    Text(
+                        "No routes match your search.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 88.dp)
+                    ) {
+                        items(filteredRoutes, key = { it.id }) { route ->
+                            RouteCard(
+                                route = route,
+                                onEdit = { editingRoute = route },
+                                onDelete = { scope.launch { db.routeDao().deleteById(route.id) } }
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+                }
+
+                FloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Create route")
+                }
             }
         }
     }

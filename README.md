@@ -376,7 +376,7 @@ Remove the Home tab entirely and fold its functionality into the Map screen.
 
 ------------------------------------------------------------------------
 
-# Phase 20 -- Search & Filter (Routes + History)
+# Phase 20 -- Search & Filter (Routes + History) - Complete
 
 Add search bars and filter controls to the Routes and History screens.
 

@@ -27,6 +27,11 @@ class SettingsRepository(private val context: Context) {
         prefs[DEFAULT_ARRIVAL_RADIUS_M] ?: 50f
     }
 
+    // true = date range picker, false = single date picker
+    val dateFilterRangeMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[DATE_FILTER_RANGE_MODE] ?: true
+    }
+
     suspend fun setTrackingInterval(ms: Long) {
         context.dataStore.edit { it[TRACKING_INTERVAL_MS] = ms }
     }
@@ -39,10 +44,15 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[DEFAULT_ARRIVAL_RADIUS_M] = meters }
     }
 
+    suspend fun setDateFilterRangeMode(rangeMode: Boolean) {
+        context.dataStore.edit { it[DATE_FILTER_RANGE_MODE] = rangeMode }
+    }
+
     companion object {
         const val DEFAULT_INTERVAL_MS = 10_000L
         private val TRACKING_INTERVAL_MS = longPreferencesKey("tracking_interval_ms")
         private val DARK_MODE = booleanPreferencesKey("dark_mode")
         private val DEFAULT_ARRIVAL_RADIUS_M = floatPreferencesKey("default_arrival_radius_m")
+        private val DATE_FILTER_RANGE_MODE = booleanPreferencesKey("date_filter_range_mode")
     }
 }

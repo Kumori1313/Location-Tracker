@@ -115,5 +115,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 Text(label, style = MaterialTheme.typography.bodyMedium)
             }
         }
+
     }
 }
