@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +36,7 @@ import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -142,11 +145,12 @@ fun MapPickerDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 properties = MapProperties(mapStyleOptions = mapStyle),
+                uiSettings = MapUiSettings(zoomControlsEnabled = false),
                 onMapClick = { latLng ->
                     pickedLocation = latLng
                     searchText = ""
@@ -155,6 +159,25 @@ fun MapPickerDialog(
             ) {
                 pickedLocation?.let {
                     Marker(state = MarkerState(position = it), title = title)
+                }
+            }
+
+            // Zoom controls — top right
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 80.dp, end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                FilledTonalIconButton(onClick = {
+                    cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomIn())
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Zoom in")
+                }
+                FilledTonalIconButton(onClick = {
+                    cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomOut())
+                }) {
+                    Icon(Icons.Default.Remove, contentDescription = "Zoom out")
                 }
             }
 
@@ -245,9 +268,9 @@ fun MapPickerDialog(
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .navigationBarsPadding()
-                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 45.dp)
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     if (pickedLocation != null) {
