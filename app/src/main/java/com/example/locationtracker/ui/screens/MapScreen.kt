@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +52,7 @@ import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
@@ -137,11 +141,14 @@ fun MapScreen(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            contentPadding = PaddingValues(bottom = 160.dp),
+            contentPadding = PaddingValues(
+                bottom = if (routes.isNotEmpty() && !isTracking) 160.dp else 84.dp
+            ),
             properties = MapProperties(
                 isMyLocationEnabled = hasLocationPermission,
                 mapStyleOptions = mapStyle
-            )
+            ),
+            uiSettings = MapUiSettings(zoomControlsEnabled = false)
         ) {
             if (latLngPoints.size >= 2) {
                 Polyline(points = latLngPoints, color = Color.Blue, width = 8f)
@@ -211,6 +218,25 @@ fun MapScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // Zoom controls — top end (below the my-location button)
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 100.dp, end = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            FilledTonalIconButton(onClick = {
+                cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomIn())
+            }) {
+                Icon(Icons.Default.Add, contentDescription = "Zoom in")
+            }
+            FilledTonalIconButton(onClick = {
+                cameraPositionState.move(com.google.android.gms.maps.CameraUpdateFactory.zoomOut())
+            }) {
+                Icon(Icons.Default.Remove, contentDescription = "Zoom out")
             }
         }
 

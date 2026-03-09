@@ -246,6 +246,7 @@ fun MapPickerDialog(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
+                    .navigationBarsPadding()
                     .fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
