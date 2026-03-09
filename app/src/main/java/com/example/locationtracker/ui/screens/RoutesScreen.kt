@@ -52,8 +52,9 @@ fun RoutesScreen(modifier: Modifier = Modifier) {
             defaultRadiusMeters = defaultRadius,
             onDismiss = { showCreateDialog = false; editingRoute = null },
             onSave = { route ->
+                val isEdit = editingRoute != null
                 scope.launch {
-                    if (editingRoute != null) db.routeDao().update(route)
+                    if (isEdit) db.routeDao().update(route)
                     else db.routeDao().insert(route)
                 }
                 showCreateDialog = false
