@@ -426,7 +426,7 @@ When the map picker used for selecting route start/end coordinates loads, automa
 
 ------------------------------------------------------------------------
 
-# Phase 23 -- Address & Location Search
+# Phase 23 -- Address & Location Search - Complete
 
 Allow users to specify route start/end points by address or by searching for a place name, in addition to tapping the map.
 

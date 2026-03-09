@@ -28,6 +28,7 @@ import com.example.locationtracker.settings.SettingsRepository
 import com.example.locationtracker.ui.navigation.AppNavigation
 import com.example.locationtracker.ui.theme.LocationTrackerTheme
 import com.example.locationtracker.workers.LocationWorker
+import com.google.android.libraries.places.api.Places
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -69,6 +70,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (!Places.isInitialized()) {
+            Places.initialize(applicationContext, BuildConfig.MAPS_API_KEY)
+        }
         setContent {
             val settingsRepo = remember { SettingsRepository(applicationContext) }
             val darkMode by settingsRepo.darkMode.collectAsState(initial = false)
