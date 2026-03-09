@@ -364,7 +364,90 @@ Automatically stop tracking when the device enters a configurable radius around 
 
 ------------------------------------------------------------------------
 
-# Phase 19 -- Play Store Preparation
+# Phase 19 -- Home Screen Consolidation - Complete
+
+Remove the Home tab entirely and fold its functionality into the Map screen.
+
+-   Move the **Start / Stop tracking** controls onto the Map screen (e.g., a FAB or bottom bar)
+-   Move **route selection** (choose an active route before tracking) onto the Map screen
+-   Remove `HomeScreen.kt` and its nav entry from `AppNavigation`
+-   Update bottom navigation bar from 6 tabs to 5: Map, Routes, History, Export, Settings
+-   Ensure the Map screen handles the "no active session" state gracefully (shows current location + route picker, not an empty map)
+
+------------------------------------------------------------------------
+
+# Phase 20 -- Search & Filter (Routes + History)
+
+Add search bars and filter controls to the Routes and History screens.
+
+### Search Bar
+
+-   Persistent search field at the top of each screen (Routes, History)
+-   Filters the displayed list in real-time as the user types
+-   Matches against route/session names (case-insensitive)
+
+### Date Filter
+
+-   Calendar date-range picker popup (Material3 `DateRangePicker`)
+-   Filters routes/sessions to only those whose date falls within the selected range
+-   Clear button resets the date filter
+
+### Travel Time Filter
+
+-   Two text inputs (min / max) accepting durations (e.g., "0:30" or "45" for minutes)
+-   Filters routes/sessions whose recorded travel time falls within the typed range
+-   Applied alongside the date filter (AND logic)
+
+------------------------------------------------------------------------
+
+# Phase 21 -- Per-Route Travel Time Statistics
+
+Record and aggregate travel time on a per-route basis, not just per session.
+
+-   When a session is associated with a named route, its duration is attributed to that route
+-   `RouteDao` gains queries for: all sessions for a route, fastest duration, average duration
+-   Routes screen (or route detail view) displays:
+    -   **Fastest time** across all sessions on this route
+    -   **Average time** across all sessions on this route
+    -   **Session count** for this route
+-   Existing per-session stats remain; this adds an aggregated layer on top
+-   No new schema columns required if sessions already carry `routeId` FK and `durationMs`; otherwise add `durationMs` to `Session` entity with a Room migration
+
+------------------------------------------------------------------------
+
+# Phase 22 -- Route Map: Center on Current Location
+
+When the map picker used for selecting route start/end coordinates loads, automatically center on the user's current location.
+
+-   On `MapPickerScreen` (or equivalent) `LaunchedEffect`, request a single location fix via `FusedLocationProviderClient.getCurrentLocation()`
+-   Move the camera to the returned `LatLng` at a street-level zoom (e.g., zoom 16) before the user interacts
+-   Fall back to a default city center if permission is denied or location is unavailable
+-   No new permissions needed (fine location already granted by Phase 3)
+
+------------------------------------------------------------------------
+
+# Phase 23 -- Address & Location Search
+
+Allow users to specify route start/end points by address or by searching for a place name, in addition to tapping the map.
+
+### Address Input (Geocoding)
+
+-   Text field on the route creation screen accepts a free-form address string
+-   On submit, call Android's `Geocoder.getFromLocationName()` (or the Places SDK geocoding endpoint) to resolve to `LatLng`
+-   Resolved coordinates are used the same way as a map tap — markers placed, fields populated
+-   Show an error if the address cannot be resolved
+
+### Location Search with Proximity Ranking (Fuzzy)
+
+-   Search field triggers suggestions via the **Google Places Autocomplete API** (`places-autocomplete` endpoint) or the **Places SDK for Android** (`PlacesClient.findAutocompletePredictions`)
+-   Results are ranked by proximity to the device's current location (pass `locationBias` / `origin` parameter)
+-   Fuzzy matching is handled server-side by the Places API (handles typos, partial names)
+-   Selecting a suggestion resolves to `LatLng` via `PlacesClient.fetchPlace` and populates the coordinate fields
+-   Requires: `com.google.android.libraries.places:places` dependency, Places API key enabled in Google Cloud Console (same key as Maps)
+
+------------------------------------------------------------------------
+
+# Phase 24 -- Play Store Preparation
 
 Requirements:
 
@@ -386,7 +469,7 @@ Checklist:
 
 ------------------------------------------------------------------------
 
-# Phase 20 -- Future Enhancements
+# Phase 25 -- Future Enhancements
 
 Potential upgrades:
 

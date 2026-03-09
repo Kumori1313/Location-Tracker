@@ -2,15 +2,24 @@ package com.example.locationtracker.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,9 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.locationtracker.R
 import com.example.locationtracker.database.AppDatabase
+import com.example.locationtracker.database.entities.Route
 import com.example.locationtracker.database.entities.Session
 import com.example.locationtracker.settings.SettingsRepository
-import com.example.locationtracker.database.entities.Route
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -47,13 +56,20 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(modifier: Modifier = Modifier) {
+fun MapScreen(
+    modifier: Modifier = Modifier,
+    isTracking: Boolean = false,
+    onStartTracking: (routeId: Long?) -> Unit = {},
+    onStopTracking: () -> Unit = {}
+) {
     val context = LocalContext.current
     val db = AppDatabase.getInstance(context)
 
     val allPoints by db.locationDao().getAllPoints().collectAsState(initial = emptyList())
     val sessions by db.sessionDao().getAllCompletedByDate().collectAsState(initial = emptyList())
+    val routes by db.routeDao().getAllRoutes().collectAsState(initial = emptyList())
 
     val hasLocationPermission = remember {
         ContextCompat.checkSelfPermission(
@@ -72,9 +88,15 @@ fun MapScreen(modifier: Modifier = Modifier) {
     }
 
     var selectedSessionId by remember { mutableStateOf<Long?>(null) }
-    var dropdownExpanded by remember { mutableStateOf(false) }
+    var sessionDropdownExpanded by remember { mutableStateOf(false) }
     var hasCenteredCamera by remember { mutableStateOf(false) }
     var activeRoute by remember { mutableStateOf<Route?>(null) }
+
+    var selectedRoute by remember { mutableStateOf<Route?>(null) }
+    var routeDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Clear route selection when tracking stops
+    LaunchedEffect(isTracking) { if (!isTracking) selectedRoute = null }
 
     // Load route associated with the selected session
     LaunchedEffect(selectedSessionId, sessions) {
@@ -155,26 +177,26 @@ fun MapScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // Session selector overlay
+        // Session selector overlay — top start
         if (sessions.isNotEmpty()) {
             OutlinedCard(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
             ) {
-                TextButton(onClick = { dropdownExpanded = true }) {
+                TextButton(onClick = { sessionDropdownExpanded = true }) {
                     Text(sessionLabel(selectedSessionId, sessions))
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 }
                 DropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false }
+                    expanded = sessionDropdownExpanded,
+                    onDismissRequest = { sessionDropdownExpanded = false }
                 ) {
                     DropdownMenuItem(
                         text = { Text("All Sessions") },
                         onClick = {
                             selectedSessionId = null
-                            dropdownExpanded = false
+                            sessionDropdownExpanded = false
                         }
                     )
                     sessions.forEach { session ->
@@ -182,10 +204,74 @@ fun MapScreen(modifier: Modifier = Modifier) {
                             text = { Text(formatSessionDate(session)) },
                             onClick = {
                                 selectedSessionId = session.id
-                                dropdownExpanded = false
+                                sessionDropdownExpanded = false
                             }
                         )
                     }
+                }
+            }
+        }
+
+        // Tracking controls — bottom overlay
+        OutlinedCard(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(8.dp)
+                .fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (routes.isNotEmpty() && !isTracking) {
+                    ExposedDropdownMenuBox(
+                        expanded = routeDropdownExpanded,
+                        onExpandedChange = { routeDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedRoute?.name ?: "None",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Route (optional)") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(routeDropdownExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = routeDropdownExpanded,
+                            onDismissRequest = { routeDropdownExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("None") },
+                                onClick = { selectedRoute = null; routeDropdownExpanded = false }
+                            )
+                            routes.forEach { route ->
+                                DropdownMenuItem(
+                                    text = { Text(route.name) },
+                                    onClick = { selectedRoute = route; routeDropdownExpanded = false }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (isTracking && selectedRoute != null) {
+                    Text(
+                        "Route: ${selectedRoute!!.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (isTracking) onStopTracking()
+                        else onStartTracking(selectedRoute?.id)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isTracking) "Stop Tracking" else "Start Tracking")
                 }
             }
         }

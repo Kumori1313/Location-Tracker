@@ -3,7 +3,6 @@ package com.example.locationtracker.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
@@ -23,13 +22,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.locationtracker.ui.screens.ExportScreen
 import com.example.locationtracker.ui.screens.HistoryScreen
-import com.example.locationtracker.ui.screens.HomeScreen
 import com.example.locationtracker.ui.screens.MapScreen
 import com.example.locationtracker.ui.screens.RoutesScreen
 import com.example.locationtracker.ui.screens.SettingsScreen
 
 enum class Screen(val label: String, val icon: ImageVector, val route: String) {
-    Home("Home", Icons.Default.Home, "home"),
     Map("Map", Icons.Default.LocationOn, "map"),
     History("History", Icons.AutoMirrored.Filled.List, "history"),
     Export("Export", Icons.Default.Share, "export"),
@@ -57,7 +54,7 @@ fun AppNavigation(
                         selected = currentRoute == screen.route,
                         onClick = {
                             navController.navigate(screen.route) {
-                                popUpTo(Screen.Home.route) { saveState = true }
+                                popUpTo(Screen.Map.route) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -71,17 +68,16 @@ fun AppNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Map.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) {
-                HomeScreen(
+            composable(Screen.Map.route) {
+                MapScreen(
                     isTracking = isTracking,
                     onStartTracking = onStartTracking,
                     onStopTracking = onStopTracking
                 )
             }
-            composable(Screen.Map.route) { MapScreen() }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Export.route) { ExportScreen() }
             composable(Screen.Routes.route) { RoutesScreen() }
