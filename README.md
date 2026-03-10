@@ -1,5 +1,3 @@
-Can you create a phase for the following: info tab that is accessible via a question mark button located across from the google watermark on the map tab. Host a tutorial for all features. Include the functionality of buttons without labels in here (e.g., the plus and minus buttons of the map views zoom in and out of the map, but you can alternatively pinch to zoom). Add the same buttons within the info/help screen but functionless so the user knows how they look visually.# Android Location Tracker -- Development Roadmap
-
 ## Project Overview
 
 A privacy‑focused Android application that: - Tracks user location -
