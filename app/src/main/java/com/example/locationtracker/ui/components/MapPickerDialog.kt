@@ -294,7 +294,7 @@ fun MapPickerDialog(
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(start = 16.dp, end = 16.dp, bottom = 45.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 60.dp)
                     .fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
